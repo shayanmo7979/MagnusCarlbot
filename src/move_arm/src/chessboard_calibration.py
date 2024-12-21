@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 import rospy
-from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest, GetPositionIKResponse
 from geometry_msgs.msg import PoseStamped
 from moveit_commander import MoveGroupCommander
 import tf2_ros
-from intera_interface import gripper as robot_gripper
 import rospkg
 import roslaunch
-import subprocess
 import numpy as np
 
 def tuck():
@@ -82,7 +79,6 @@ def GetGrid():
     a1_x = ar_x - 0.03  # Move forward (negative X) from AR tag to a1
     a1_y = ar_y + 0.15  # Move right (positive Y) from AR tag to a1
     z_const = ar_z + 0.15  # Constant Z height above the board
-    # z_const = ar_z + 0.2  # Constant Z height above the board
 
     # Grid increments based on actual chessboard spacing
     square_size = 0.056  # 6.1 cm increments
@@ -128,7 +124,6 @@ def move_to_square(square, group, grid_positions):
     target_pose.pose.position.x = pos[0]
     target_pose.pose.position.y = pos[1]
     target_pose.pose.position.z = pos[2] + 0.15 # Move above the square
-    # target_pose.pose.position.z = pos[2] + 0.2 # Move above the square
 
     # Gripper orientation (pointing down)
     target_pose.pose.orientation.x = 0.0
@@ -174,6 +169,6 @@ def main():
         else:
             print("Invalid square name. Please try again.")   
     
-# Python's syntax for a main() method
+
 if __name__ == '__main__':
     main()

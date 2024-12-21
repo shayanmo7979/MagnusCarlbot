@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 import rospy
-from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest, GetPositionIKResponse
 from geometry_msgs.msg import PoseStamped
 from moveit_commander import MoveGroupCommander
 import tf2_ros
 from intera_interface import gripper as robot_gripper
 import rospkg
 import roslaunch
-import subprocess
 import numpy as np
 
 def tuck():
@@ -67,7 +65,7 @@ def GetGrid():
 
     Adjust offsets and square_size as needed based on your calibration.
     """
-    board_marker_id = 15  # Update if your AR tag for the board is different
+    board_marker_id = 15  
     ar_pos = lookup_tag(board_marker_id)
     if ar_pos is None:
         rospy.logerr("Failed to get AR tag position.")
@@ -75,8 +73,6 @@ def GetGrid():
 
     ar_x, ar_y, ar_z = ar_pos
 
-    # Adjust these offsets and increments based on your actual board setup
-    # Here we assume a1 is offset from the AR tag.
     a1_x = ar_x - 0.03  # Move forward (negative X) from AR tag to a1
     a1_y = ar_y + 0.15  # Move right (positive Y) from AR tag to a1
     z_const = ar_z + 0.2
@@ -112,12 +108,11 @@ def move_to_square(square, group, grid_positions):
 
     target_pose = PoseStamped()
     target_pose.header.frame_id = "base"
-    # Move the arm ~20 cm above the square
+
     target_pose.pose.position.x = pos[0]
     target_pose.pose.position.y = pos[1]
     target_pose.pose.position.z = pos[2] + 0.2
 
-    # Gripper orientation pointing down: try x=0,y=1,z=0,w=0 if it works for your setup
     target_pose.pose.orientation.x = 0.0
     target_pose.pose.orientation.y = 1.0
     target_pose.pose.orientation.z = 0.0
@@ -143,7 +138,6 @@ def pick_piece(group, gripper, target_position):
     """
     rospy.loginfo("Moving above target position...")
 
-    # Step 1: Move 20 cm above the target position
     target_pose = PoseStamped()
     target_pose.header.frame_id = "base"
     target_pose.pose.position.x = target_position[0]
@@ -161,23 +155,20 @@ def pick_piece(group, gripper, target_position):
     input("Check the plan to move above the target. Press Enter to execute...")
     group.execute(plan[1], wait=True)
 
-    # Step 3: Move straight down to the pickup height
     rospy.loginfo("Descending to pick up the piece...")
-    target_pose.pose.position.z = target_position[2] + 0.05  # 2 cm above block
+    target_pose.pose.position.z = target_position[2] + 0.05 
     group.set_pose_target(target_pose)
     plan = group.plan()
     input("Check the descent plan. Press Enter to execute...")
     group.execute(plan[1], wait=True)
     rospy.sleep(1.0)
 
-    # Step 4: Close the gripper
     rospy.loginfo("Closing gripper...")
     gripper.close()
     rospy.sleep(1.0)
 
-    # Step 5: Lift back up
     rospy.loginfo("Lifting the piece...")
-    target_pose.pose.position.z = target_position[2] + 0.2  # Back to safe height
+    target_pose.pose.position.z = target_position[2] + 0.2  
     group.set_pose_target(target_pose)
     plan = group.plan()
     input("Check the lift plan. Press Enter to execute...")
@@ -196,12 +187,11 @@ def release_piece(group, gripper, target_position):
     """
     rospy.loginfo("Moving above target position...")
 
-    # Step 1: Move 20 cm above the target position
     target_pose = PoseStamped()
     target_pose.header.frame_id = "base"
     target_pose.pose.position.x = target_position[0]
     target_pose.pose.position.y = target_position[1]
-    target_pose.pose.position.z = target_position[2] + 0.2  # 20 cm above
+    target_pose.pose.position.z = target_position[2] + 0.2  
     target_pose.pose.orientation.x = 0.0
     target_pose.pose.orientation.y = 1.0
     target_pose.pose.orientation.z = 0.0
@@ -212,22 +202,19 @@ def release_piece(group, gripper, target_position):
     input("Check the plan to move above the target. Press Enter to execute...")
     group.execute(plan[1], wait=True)
 
-    # Step 2: Move straight down to place the piece
     rospy.loginfo("Descending to place the piece...")
-    target_pose.pose.position.z = target_position[2] + 0.05  # 2 cm above surface
+    target_pose.pose.position.z = target_position[2] + 0.05  
     group.set_pose_target(target_pose)
     plan = group.plan()
     input("Check the descent plan. Press Enter to execute...")
     group.execute(plan[1], wait=True)
 
-    # Step 3: Open the gripper
     rospy.loginfo("Opening gripper...")
     gripper.open()
     rospy.sleep(1.0)
 
-    # Step 4: Lift back up
     rospy.loginfo("Lifting gripper...")
-    target_pose.pose.position.z = target_position[2] + 0.2  # Back to safe height
+    target_pose.pose.position.z = target_position[2] + 0.2 
     group.set_pose_target(target_pose)
     plan = group.plan()
     input("Check the lift plan. Press Enter to execute...")
@@ -246,7 +233,6 @@ def main():
     rospy.loginfo("Initializing... Please wait.")
     rospy.sleep(2.0)
 
-    # Get the grid positions from AR tag
     grid_positions = GetGrid()
     if not grid_positions:
         print("Failed to generate grid positions. Exiting.")
@@ -267,14 +253,10 @@ def main():
             print("Invalid to_square. Please try again.")
             continue
 
-        # Move above from_square
         if move_to_square(from_square, group, grid_positions):
-            # Pick piece
             pick_piece(group, right_gripper, grid_positions[from_square])
 
-            # Move above to_square
             if move_to_square(to_square, group, grid_positions):
-                # Release piece
                 release_piece(group, right_gripper, grid_positions[to_square])
                 print(f"Successfully moved piece from {from_square} to {to_square}.")
             else:
